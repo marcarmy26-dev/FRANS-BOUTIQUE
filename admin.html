@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Fran's Boutique — Admin</title>
+<style>
+  :root{--bg:#0C0C0E;--panel:#17171B;--edge:rgba(255,255,255,.12);--ink:#F1F1EF;--mut:#9C9C99;--acc:#F4F4F2}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:system-ui,sans-serif;background:linear-gradient(180deg,#17171B,#0A0A0C 60%,#040405);min-height:100vh;color:var(--ink);padding:24px}
+  h1{font-size:1.3rem;font-weight:600;margin-bottom:4px}
+  .sub{color:var(--mut);font-size:.85rem;margin-bottom:24px}
+  .card{background:var(--panel);border:1px solid var(--edge);border-radius:14px;padding:20px;margin-bottom:18px;max-width:1020px}
+  label{display:block;font-size:.78rem;color:var(--mut);margin:10px 0 4px;text-transform:uppercase;letter-spacing:.06em}
+  input,select{width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--edge);background:#0F0F12;color:var(--ink);font-size:.92rem}
+  input:focus,select:focus{outline:1px solid rgba(255,255,255,.35)}
+  button{padding:10px 18px;border-radius:999px;border:none;background:var(--acc);color:#141416;font-weight:600;cursor:pointer;font-size:.88rem}
+  button.ghost{background:transparent;color:var(--ink);border:1px solid var(--edge)}
+  button.warn{background:#3A1D1D;color:#F0B9B9;border:1px solid #5A2A2A}
+  .row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+  .bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:14px}
+  table{width:100%;border-collapse:collapse;font-size:.88rem}
+  th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--edge)}
+  th{color:var(--mut);font-weight:500;font-size:.75rem;text-transform:uppercase;letter-spacing:.06em}
+  .pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:.72rem;border:1px solid var(--edge);color:var(--mut)}
+  .pill.sold{background:#3A1D1D;color:#F0B9B9;border-color:#5A2A2A}
+  .hint{font-size:.78rem;color:var(--mut);margin-top:6px;line-height:1.5}
+  .msg{padding:10px 14px;border-radius:8px;font-size:.85rem;margin-bottom:14px;display:none}
+  .msg.ok{display:block;background:#16281B;color:#A9E0B4;border:1px solid #23422B}
+  .msg.err{display:block;background:#3A1D1D;color:#F0B9B9;border:1px solid #5A2A2A}
+  #app{display:none}
+  .price-preview{font-size:.82rem;color:var(--mut);margin-top:8px}
+  .price-preview b{color:var(--ink)}
+  @media(max-width:700px){table{font-size:.78rem} td,th{padding:8px 4px}}
+</style>
+</head>
+<body>
+
+<h1>Fran's Boutique — Admin</h1>
+<div class="sub">Products, pricing model, and payment links. Changes go live within about a minute.</div>
+<div class="msg" id="msg"></div>
+
+<div class="card" id="loginCard">
+  <label>Admin password</label>
+  <input type="password" id="pw" autocomplete="current-password">
+  <div class="bar"><button onclick="login()">Sign in</button></div>
+  <div class="hint">The password is the ADMIN_PASSWORD value set in Netlify environment variables. It is checked server-side on every request.</div>
+</div>
+
+<div id="app">
+  <div class="card">
+    <h1 style="font-size:1.05rem">Pricing model</h1>
+    <div class="row">
+      <div>
+        <label>Mode</label>
+        <select id="pricingMode">
+          <option value="dual">Dual pricing (card price / bank price)</option>
+          <option value="single">Single price</option>
+        </select>
+      </div>
+      <div>
+        <label>Card price differential %</label>
+        <input type="number" id="dualPercent" step="0.1" min="0" max="10">
+      </div>
+      <div>
+        <label>Bank payment (ACH) option</label>
+        <select id="achEnabled"><option value="true">Enabled</option><option value="false">Disabled</option></select>
+      </div>
+    </div>
+    <div class="price-preview" id="pricePreview"></div>
+    <div class="bar"><button onclick="saveSettings()">Save pricing</button></div>
+    <div class="hint">Dual pricing shows BOTH prices on every listing before checkout — the bank-pay price and the card price. Colorado caps card surcharges (2% or actual cost of acceptance); confirm your differential and presentation against current statute and card-brand rules before enabling above 2%.</div>
+  </div>
+
+  <div class="card">
+    <h1 style="font-size:1.05rem" id="formTitle">Add product</h1>
+    <input type="hidden" id="pid">
+    <div class="row">
+      <div><label>Name</label><input id="pname" placeholder="'70s Suede Western Jacket"></div>
+      <div><label>Collection</label><select id="pcol"><option value="find">The Find</option><option value="studio">The Studio</option><option value="shelf">The Shelf</option></select></div>
+      <div><label>Bank / base price ($)</label><input id="pprice" type="number" step="0.01" min="0"></div>
+      <div><label>Badge</label><input id="pbadge" placeholder="1 of 1"></div>
+    </div>
+    <div class="row">
+      <div><label>Image URL (optional)</label><input id="pimg" placeholder="https://..."></div>
+      <div><label>Stripe card link</label><input id="pstripe" placeholder="https://buy.stripe.com/..."></div>
+      <div><label>Stripe ACH / bank link</label><input id="pach" placeholder="https://buy.stripe.com/..."></div>
+      <div><label>PayPal link</label><input id="ppaypal" placeholder="https://paypal.me/FransBoutique/68"></div>
+    </div>
+    <div class="row" style="margin-top:12px;grid-template-columns:180px">
+      <div><label>Status</label><select id="psold"><option value="false">Available</option><option value="true">Sold</option></select></div>
+    </div>
+    <div class="bar">
+      <button onclick="saveProduct()">Save product</button>
+      <button class="ghost" onclick="resetForm()">Clear</button>
+    </div>
+    <div class="hint">Create the Stripe Payment Link on the product in your Stripe dashboard (enable "US bank account" as a payment method there for the ACH link, 0.8% fee capped at $5). Leave any link blank to hide that button on the site.</div>
+  </div>
+
+  <div class="card">
+    <h1 style="font-size:1.05rem">Products</h1>
+    <table><thead><tr><th>Name</th><th>Collection</th><th>Price</th><th>Status</th><th>Links</th><th></th></tr></thead>
+    <tbody id="rows"></tbody></table>
+  </div>
+</div>
+
+<script>
+const API = '/.netlify/functions/admin-api';
+let KEY = sessionStorage.getItem('fbk') || '';
+let STATE = { settings:null, products:[] };
+
+function say(t, ok){ const m=document.getElementById('msg'); m.textContent=t; m.className='msg '+(ok?'ok':'err'); setTimeout(()=>m.className='msg',4000); }
+async function call(method, resource, body){
+  const r = await fetch(API + (resource?('?resource='+resource+(body&&body.id&&method==='DELETE'?'&id='+encodeURIComponent(body.id):'')):''), {
+    method, headers:{'Content-Type':'application/json','x-admin-key':KEY},
+    body: (method==='GET'||method==='DELETE')?undefined:JSON.stringify(body)
+  });
+  const data = await r.json();
+  if(!r.ok) throw new Error(data.error||('HTTP '+r.status));
+  return data;
+}
+async function login(){
+  KEY = document.getElementById('pw').value.trim();
+  try{
+    STATE = await call('GET');
+    sessionStorage.setItem('fbk', KEY);
+    document.getElementById('loginCard').style.display='none';
+    document.getElementById('app').style.display='block';
+    render();
+  }catch(e){ say('Sign-in failed: '+e.message, false); }
+}
+function money(n){ return '$'+Number(n).toFixed(2).replace(/\.00$/,''); }
+function cardPrice(bank){ const pct=STATE.settings?STATE.settings.dualPercent:0; return bank*(1+pct/100); }
+function render(){
+  const s=STATE.settings;
+  document.getElementById('pricingMode').value=s.pricingMode;
+  document.getElementById('dualPercent').value=s.dualPercent;
+  document.getElementById('achEnabled').value=String(s.achEnabled);
+  preview();
+  const tb=document.getElementById('rows'); tb.innerHTML='';
+  STATE.products.forEach(p=>{
+    const tr=document.createElement('tr');
+    const links=[p.stripeLink&&'Card',p.achLink&&'ACH',p.paypalLink&&'PayPal'].filter(Boolean).join(' · ')||'—';
+    tr.innerHTML='<td>'+esc(p.name)+'</td><td>'+p.collection+'</td><td>'+money(p.priceBank)+
+      (s.pricingMode==='dual'?' <span class="pill">card '+money(cardPrice(p.priceBank))+'</span>':'')+
+      '</td><td><span class="pill'+(p.sold?' sold':'')+'">'+(p.sold?'Sold':'Available')+'</span></td><td>'+links+'</td>'+
+      '<td style="white-space:nowrap"><button class="ghost" onclick=\'edit("'+p.id+'")\'>Edit</button> '+
+      '<button class="ghost" onclick=\'toggleSold("'+p.id+'")\'>'+(p.sold?'Relist':'Mark sold')+'</button> '+
+      '<button class="warn" onclick=\'del("'+p.id+'")\'>Delete</button></td>';
+    tb.appendChild(tr);
+  });
+}
+function esc(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function preview(){
+  const pct=Number(document.getElementById('dualPercent').value)||0;
+  const mode=document.getElementById('pricingMode').value;
+  document.getElementById('pricePreview').innerHTML = mode==='dual'
+    ? 'Example on a $68 item: bank price <b>$68</b> · card price <b>'+money(68*(1+pct/100))+'</b> (both shown to the buyer before checkout)'
+    : 'Single price shown; all payment methods charge the same amount.';
+}
+document.getElementById('dualPercent').addEventListener('input',preview);
+document.getElementById('pricingMode').addEventListener('change',preview);
+async function saveSettings(){
+  try{
+    const d = await call('PUT','settings',{
+      pricingMode:document.getElementById('pricingMode').value,
+      dualPercent:Number(document.getElementById('dualPercent').value),
+      achEnabled:document.getElementById('achEnabled').value==='true'
+    });
+    STATE.settings=d.settings; render(); say('Pricing saved.', true);
+  }catch(e){ say(e.message,false); }
+}
+function edit(id){
+  const p=STATE.products.find(x=>x.id===id); if(!p) return;
+  document.getElementById('formTitle').textContent='Edit product';
+  pid.value=p.id; pname.value=p.name; pcol.value=p.collection; pprice.value=p.priceBank;
+  pbadge.value=p.badge; pimg.value=p.imgUrl; pstripe.value=p.stripeLink; pach.value=p.achLink;
+  ppaypal.value=p.paypalLink; psold.value=String(p.sold);
+  scrollTo({top:0,behavior:'smooth'});
+}
+function resetForm(){
+  document.getElementById('formTitle').textContent='Add product';
+  ['pid','pname','pprice','pbadge','pimg','pstripe','pach','ppaypal'].forEach(i=>document.getElementById(i).value='');
+  pcol.value='find'; psold.value='false';
+}
+async function saveProduct(){
+  try{
+    await call('POST','product',{
+      id:pid.value||undefined, name:pname.value, collection:pcol.value,
+      priceBank:Number(pprice.value), badge:pbadge.value, imgUrl:pimg.value,
+      stripeLink:pstripe.value, achLink:pach.value, paypalLink:ppaypal.value,
+      sold:psold.value==='true'
+    });
+    STATE = await call('GET'); render(); resetForm(); say('Product saved.', true);
+  }catch(e){ say(e.message,false); }
+}
+async function toggleSold(id){
+  const p=STATE.products.find(x=>x.id===id); if(!p) return;
+  try{ await call('POST','product',{...p, sold:!p.sold}); STATE=await call('GET'); render(); say(p.sold?'Relisted.':'Marked sold.', true); }
+  catch(e){ say(e.message,false); }
+}
+async function del(id){
+  if(!confirm('Delete this product permanently?')) return;
+  try{ await call('DELETE','product',{id}); STATE=await call('GET'); render(); say('Deleted.', true); }
+  catch(e){ say(e.message,false); }
+}
+if(KEY){ login = login; (async()=>{ try{ STATE=await call('GET'); document.getElementById('loginCard').style.display='none'; document.getElementById('app').style.display='block'; render(); }catch(e){ sessionStorage.removeItem('fbk'); KEY=''; } })(); }
+</script>
+</body>
+</html>

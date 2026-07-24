@@ -369,11 +369,6 @@
   .chat-form button{font-family:var(--body);font-weight:600;font-size:.86rem;padding:11px 20px;border-radius:var(--r-pill);
     border:none;background:#1B1B1A;color:#FBFBFA;cursor:pointer}
   @media(max-width:480px){.chat-panel{right:8px;width:calc(100vw - 16px)}}
-
-  .grid-note{color:#8B8B89;font-size:.9rem;grid-column:1/-1}
-  .price-line{font-size:.86rem;color:#9C9C99}
-  .price-line b{color:#F4F4F2;font-weight:600}
-  .price-line .save{color:#A9E0B4;font-size:.78rem;margin-left:6px}
 </style>
 </head>
 <body>
@@ -526,7 +521,9 @@
     <h1>The Find</h1>
     <p>One-of-a-kind vintage pieces &mdash; rescued, cleaned, and described honestly. When a piece sells, it's gone for good.</p>
   </div>
-  <div class="product-wrap"><div class="feat-grid" data-collection="find"><p class="grid-note">Loading pieces&hellip;</p></div></div></div>
+  <div class="product-wrap"><div class="feat-grid">
+    <div class="feat"><div class="ph"><span class="badge">1 of 1</span></div><div class="meta"><h4>'70s Suede Western Jacket</h4><span>$68</span>
+      <div class="buy-row"><a class="buy-btn" data-stripe href="#" data-unconfigured>Buy with card</a><a class="buy-btn alt" data-paypal href="#" data-unconfigured>PayPal</a></div></div></div>
     <div class="feat"><div class="ph"><span class="badge">1 of 1</span></div><div class="meta"><h4>Milk Glass Vase, c. 1960</h4><span>$24</span>
       <div class="buy-row"><a class="buy-btn" data-stripe href="#" data-unconfigured>Buy with card</a><a class="buy-btn alt" data-paypal href="#" data-unconfigured>PayPal</a></div></div></div>
     <div class="feat sold"><div class="ph"><span class="badge">1 of 1</span></div><div class="meta"><h4>Brass Candlestick Pair</h4><span>$32</span></div></div>
@@ -541,7 +538,9 @@
     <h1>The Studio</h1>
     <p>Handcrafted jewelry and original art from independent makers. Each listing names the maker and the materials.</p>
   </div>
-  <div class="product-wrap"><div class="feat-grid" data-collection="studio"><p class="grid-note">Loading pieces&hellip;</p></div></div></div>
+  <div class="product-wrap"><div class="feat-grid">
+    <div class="feat"><div class="ph"><span class="badge">Handmade</span></div><div class="meta"><h4>Hammered Silver Drop Earrings</h4><span>$42</span>
+      <div class="buy-row"><a class="buy-btn" data-stripe href="#" data-unconfigured>Buy with card</a><a class="buy-btn alt" data-paypal href="#" data-unconfigured>PayPal</a></div></div></div>
     <div class="feat"><div class="ph"><span class="badge">Handmade</span></div><div class="meta"><h4>Turquoise Pendant, Sterling</h4><span>$56</span>
       <div class="buy-row"><a class="buy-btn" data-stripe href="#" data-unconfigured>Buy with card</a><a class="buy-btn alt" data-paypal href="#" data-unconfigured>PayPal</a></div></div></div>
     <div class="feat"><div class="ph"><span class="badge">Original art</span></div><div class="meta"><h4>Watercolor Landscape, Framed</h4><span>$85</span>
@@ -557,7 +556,9 @@
     <h1>The Shelf</h1>
     <p>A short, selective shelf of new goods. If it's here, it passed the same test as everything else.</p>
   </div>
-  <div class="product-wrap"><div class="feat-grid" data-collection="shelf"><p class="grid-note">Loading pieces&hellip;</p></div></div></div>
+  <div class="product-wrap"><div class="feat-grid">
+    <div class="feat"><div class="ph"><span class="badge">New</span></div><div class="meta"><h4>Linen Throw, Fog Stripe</h4><span>$54</span>
+      <div class="buy-row"><a class="buy-btn" data-stripe href="#" data-unconfigured>Buy with card</a><a class="buy-btn alt" data-paypal href="#" data-unconfigured>PayPal</a></div></div></div>
     <div class="feat"><div class="ph"><span class="badge">New</span></div><div class="meta"><h4>Soy Candle, Smoked Cedar</h4><span>$18</span>
       <div class="buy-row"><a class="buy-btn" data-stripe href="#" data-unconfigured>Buy with card</a><a class="buy-btn alt" data-paypal href="#" data-unconfigured>PayPal</a></div></div></div>
   </div></div>
@@ -716,47 +717,6 @@ document.querySelectorAll('[data-stripe],[data-paypal]').forEach(btn=>{
       if(!r.ok||data.error){typing.textContent=data.error||'Something went wrong \u2014 try again in a moment.';return;}
       typing.textContent=data.reply; historyMsgs.push({role:'assistant',content:data.reply});
     }catch(err){typing.classList.remove('typing');typing.textContent="Can't reach the assistant right now \u2014 please try again.";}
-  });
-})();
-
-/* CMS storefront renderer: pulls live products + pricing model */
-(function(){
-  const money = n => '$'+Number(n).toFixed(2).replace(/\.00$/,'');
-  function card(p, s){
-    const dual = s && s.pricingMode==='dual';
-    const cardP = dual ? p.priceBank*(1+s.dualPercent/100) : p.priceBank;
-    const d=document.createElement('div');
-    d.className='feat'+(p.sold?' sold':'');
-    const img = p.imgUrl ? 'style="background-image:url(\''+p.imgUrl.replace(/'/g,'%27')+'\');background-size:cover;background-position:center"' : '';
-    let buttons='';
-    if(!p.sold){
-      const b=[];
-      if(p.stripeLink) b.push('<a class="buy-btn" target="_blank" rel="noopener" href="'+p.stripeLink+'">Card '+(dual?money(cardP):'')+'</a>');
-      if(s && s.achEnabled && p.achLink) b.push('<a class="buy-btn alt" target="_blank" rel="noopener" href="'+p.achLink+'">Bank '+(dual?money(p.priceBank):'')+'</a>');
-      if(p.paypalLink) b.push('<a class="buy-btn alt" target="_blank" rel="noopener" href="'+p.paypalLink+'">PayPal</a>');
-      if(b.length) buttons='<div class="buy-row">'+b.join('')+'</div>';
-    }
-    const price = dual
-      ? '<div class="price-line">Bank <b>'+money(p.priceBank)+'</b> &middot; Card <b>'+money(cardP)+'</b><span class="save">save '+(Math.round((1-p.priceBank/cardP)*1000)/10)+'% paying by bank</span></div>'
-      : '<div class="price-line"><b>'+money(p.priceBank)+'</b></div>';
-    d.innerHTML='<div class="ph" '+img+'><span class="badge">'+(p.badge||'')+'</span></div>'+
-      '<div class="meta"><h4></h4>'+price+buttons+'</div>';
-    d.querySelector('h4').textContent=p.name;
-    return d;
-  }
-  fetch('/.netlify/functions/products').then(r=>r.json()).then(data=>{
-    const s=data.settings, list=data.products||[];
-    document.querySelectorAll('[data-collection]').forEach(grid=>{
-      const col=grid.dataset.collection;
-      const items=list.filter(p=>p.collection===col);
-      grid.innerHTML='';
-      if(!items.length){ grid.innerHTML='<p class="grid-note">New pieces are on the way &mdash; check back soon.</p>'; return; }
-      items.forEach(p=>grid.appendChild(card(p,s)));
-    });
-  }).catch(()=>{
-    document.querySelectorAll('[data-collection]').forEach(grid=>{
-      grid.innerHTML='<p class="grid-note">The catalog is loading slowly &mdash; refresh in a moment.</p>';
-    });
   });
 })();
 </script>
